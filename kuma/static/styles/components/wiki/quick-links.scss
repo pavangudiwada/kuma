@@ -36,7 +36,10 @@ $see-also-outdent: 6px;
     }
 
     li li {
-        @include bidi-style(padding-left, $grid-spacing * 1.5, padding-right, 0);
+        line-height: 1;
+        @include bidi-style(padding-left, $grid-spacing, padding-right, 0);
+        padding-top: 5px;
+        padding-bottom: 5px;
     }
 
     li li li {
@@ -45,7 +48,6 @@ $see-also-outdent: 6px;
 
     code {
         background-color: transparent;
-        color: inherit;
         padding: 0;
     }
 
@@ -61,11 +63,12 @@ $see-also-outdent: 6px;
         width: 100%;
 
         &.see-also {
-            background: $light-background-color;
+            // background: $light-background-color;
             /* to left align the text in this box with the text above and below */
             @include bidi-style(margin-left, ($see-also-outdent * -1), margin-right, 0);
             @include bidi-value(padding, 4px $see-also-outdent 4px 0, 4px 0 4px $see-also-outdent);
             text-indent: $see-also-outdent;
+            border-bottom: 1px solid #d7d7d7;
         }
     }
 
