@@ -15,7 +15,14 @@ $table-cell-border: 2px solid #fff;
     ====================================================================== */
 
     h2 {
+        margin-top: 60px;
+        @include set-font-size(60px);
+    }
+
+    h3 {
         @extend %highlight;
+        margin-top: 40px;
+        @include set-font-size(24px);
     }
 
     /*
