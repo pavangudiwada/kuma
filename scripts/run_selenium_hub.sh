@@ -10,10 +10,9 @@ SELENIUM_TAG=${SELENIUM_TAG:-3.6.0-copper}
 BROWSERS=${BROWSERS:-chrome firefox}
 SELENIUM_LOGS=${SELENIUM_LOGS:-0}
 TRACE_GECKODRIVER=${TRACE_GECKODRIVER:-0}
+FF_ENV=${FF_ENV:- --shm-size 2g}
 if [ "$TRACE_GECKODRIVER" != 0 ]; then
-    FF_ENV="--env DRIVER_LOGLEVEL=trace"
-else
-    FF_ENV=
+    FF_ENV="$FF_ENV --env DRIVER_LOGLEVEL=trace"
 fi
 
 find . \( -name \*.pyc -o -name \*.pyo -o -name __pycache__ \) -prune -exec rm -rf {} +
@@ -34,7 +33,6 @@ find . \( -name \*.pyc -o -name \*.pyo -o -name __pycache__ \) -prune -exec rm -
     if [[ "$browser" == "firefox" ]]; then
         docker exec "selenium-node-${browser}-${NAME_SUFFIX}" /opt/bin/generate_config
     fi
-    sleep 5
   done
   for browser in ${BROWSERS}; do
     cmd="pytest --driver Remote --capability browserName ${browser} --host hub --base-url=${BASE_URL} ${PYTEST_ARGS}"
