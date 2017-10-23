@@ -6,9 +6,15 @@ fi
 echo "ARGS=$PYTEST_ARGS"
 BASE_URL=${BASE_URL:-https://developer.allizom.org}
 NAME_SUFFIX=${NAME_SUFFIX:-kuma}
-SELENIUM_TAG=${SELENIUM_TAG:-3.6.0}
+SELENIUM_TAG=${SELENIUM_TAG:-3.6.0-copper}
 BROWSERS=${BROWSERS:-chrome firefox}
 SELENIUM_LOGS=${SELENIUM_LOGS:-0}
+TRACE_GECKODRIVER=${TRACE_GECKODRIVER:-0}
+if [ "$TRACE_GECKODRIVER" != 0 ]; then
+    FF_ENV="--env DRIVER_LOGLEVEL=trace"
+else
+    FF_ENV=
+fi
 
 find . \( -name \*.pyc -o -name \*.pyo -o -name __pycache__ \) -prune -exec rm -rf {} +
 
@@ -19,7 +25,16 @@ find . \( -name \*.pyc -o -name \*.pyo -o -name __pycache__ \) -prune -exec rm -
 
   IFS=" "
   for browser in ${BROWSERS}; do
-    docker run -d --name "selenium-node-${browser}-${NAME_SUFFIX}" --link selenium-hub-kuma:hub "selenium/node-${browser}:${SELENIUM_TAG}"
+    if [[ "$browser" == "firefox" ]]; then
+        BROWSER_ENV=$FF_ENV
+    else
+        BROWSER_ENV=
+    fi
+    docker run -d --name "selenium-node-${browser}-${NAME_SUFFIX}" --link selenium-hub-kuma:hub ${BROWSER_ENV} "selenium/node-${browser}:${SELENIUM_TAG}"
+    if [[ "$browser" == "firefox" ]]; then
+        docker exec "selenium-node-${browser}-${NAME_SUFFIX}" /opt/bin/generate_config
+    fi
+    sleep 5
   done
   for browser in ${BROWSERS}; do
     cmd="pytest --driver Remote --capability browserName ${browser} --host hub --base-url=${BASE_URL} ${PYTEST_ARGS}"
