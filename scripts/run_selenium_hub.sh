@@ -9,6 +9,7 @@ NAME_SUFFIX=${NAME_SUFFIX:-kuma}
 SELENIUM_TAG=${SELENIUM_TAG:-3.6.0-copper}
 BROWSERS=${BROWSERS:-chrome firefox}
 SELENIUM_LOGS=${SELENIUM_LOGS:-0}
+PAUSE=${PAUSE:-0}
 TRACE_GECKODRIVER=${TRACE_GECKODRIVER:-0}
 FF_ENV=${FF_ENV:- --shm-size 2g}
 if [ "$TRACE_GECKODRIVER" != 0 ]; then
@@ -20,7 +21,7 @@ find . \( -name \*.pyc -o -name \*.pyo -o -name __pycache__ \) -prune -exec rm -
 (
   set -e
   docker build -t kuma-integration-tests:latest --pull=true -f docker/images/integration-tests/Dockerfile .
-  docker run -d --name "selenium-hub-${NAME_SUFFIX}" "selenium/hub:${SELENIUM_TAG}"
+  docker run -d --name "selenium-hub-${NAME_SUFFIX}" -p 4444:4444 "selenium/hub:${SELENIUM_TAG}"
 
   IFS=" "
   for browser in ${BROWSERS}; do
@@ -45,6 +46,10 @@ if [[ "$SELENIUM_LOGS" != "0" ]]; then
   for browser in ${BROWSERS}; do
     docker logs "selenium-node-${browser}-${NAME_SUFFIX}"
   done
+fi
+
+if [[ "$PAUSE" != "0" ]]; then
+    read -p "Pausing. To remove hub/node images, press [ENTER]: "
 fi
 
 for browser in ${BROWSERS}; do
