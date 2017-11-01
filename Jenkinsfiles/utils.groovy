@@ -2,6 +2,25 @@
  * Define utility functions.
  */
 
+def get_target() {
+    if (env.BRANCH_NAME == 'prod-push') {
+        return 'prod'
+    if (env.BRANCH_NAME == 'stage-push') {
+        return 'stage'
+    }
+    return null
+}
+
+def get_repo() {
+    echo sh(returnStdout: true, script: 'env')
+    if (env.JOB_NAME.startsWith('mdn_multibranch')) {
+        return 'kuma'
+    if (env.JOB_NAME.startsWith('kumascript_multibranch')) {
+        return 'kumascript'
+    }
+    return null
+}
+
 def checkout_github(repo, branch, relative_target_dir) {
     checkout(
         [$class: 'GitSCM',
@@ -22,24 +41,27 @@ def notify_irc(Map args) {
     sh command
 }
 
-def make(setup, cmd) {
-    sh """
-        . ${setup}
-        make ${cmd} KUMA_IMAGE_TAG=${env.GIT_COMMIT_SHORT}
-    """
-}
-
-def make_stage(cmd, cmd_display) {
+def make(cmd, cmd_display) {
+    def target = get_target()
+    def nick = "mdn${target}push"
+    def tag = env.GIT_COMMIT.take(7)
+    def repo_upper = get_repo().toUpperCase()
     try {
-        make('regions/portland/stage.sh', cmd)
+        /*
+         * Run the actual make command within the proper environment.
+         */
+        sh """
+            . regions/portland/${target}.sh
+            make ${cmd} ${repo_upper}_IMAGE_TAG=${tag}
+        """
         notify_irc([
-            irc_nick: 'mdnstagepush',
+            irc_nick: nick,
             stage: cmd_display,
             status: 'success'
         ])
     } catch(err) {
         notify_irc([
-            irc_nick: 'mdnstagepush',
+            irc_nick: nick,
             stage: cmd_display,
             status: 'failure'
         ])
@@ -47,16 +69,43 @@ def make_stage(cmd, cmd_display) {
     }
 }
 
-def migrate_stage_db() {
-    make_stage('k8s-db-migration-job', 'Migrate Database')
+def migrate_db() {
+    /*
+     * Migrate the database (only for kuma).
+     */
+    if (get_repo() == 'kuma') {
+        make('k8s-db-migration-job', 'Migrate Database')
+    }
 }
 
-def rollout_to_stage() {
-    make_stage('k8s-kuma-deployments', 'Start Rollout')
+def rollout() {
+    /*
+     * Start a rolling update.
+     */
+    def repo = get_repo()
+    make("k8s-${repo}-deployments", 'Start Rollout')
 }
 
-def monitor_rollout_to_stage() {
-    make_stage('k8s-kuma-rollout-status', 'Check Rollout Status')
+def monitor_rollout() {
+    /*
+     * Monitor the rolling update until it succeeds or fails.
+     */
+    def repo = get_repo()
+    make("k8s-${repo}-rollout-status", 'Check Rollout Status')
+}
+
+def announce_push() {
+    /*
+     * Announce the push.
+     */
+    def repo = get_repo()
+    def target = get_target()
+    def tag = env.GIT_COMMIT.take(7)
+    notify_irc([
+        irc_nick: "mdn${target}push",
+        status: "Pushing to ${target}",
+        message: "${repo} image ${tag}"
+    ])
 }
 
 return this;

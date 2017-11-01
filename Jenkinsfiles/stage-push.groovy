@@ -1,9 +1,5 @@
 stage("Announce") {
-    utils.notify_irc([
-        irc_nick: 'mdnstagepush',
-        status: 'Pushing to Stage',
-        message: "Kuma image ${env.GIT_COMMIT_SHORT}"
-    ])
+    utils.announce_push()
 }
 
 stage("Prepare Infra") {
@@ -15,10 +11,10 @@ stage("Prepare Infra") {
 stage('Push') {
     dir('infra/apps/mdn/mdn-aws/k8s') {
         // Run the database migrations.
-        utils.migrate_stage_db()
-        // Perform a rolling update of the Kuma-based deployments.
-        utils.rollout_to_stage()
-        // Watch the rollout status until it has completed.
-        utils.monitor_rollout_to_stage()
+        utils.migrate_db()
+        // Start a rolling update of the Kuma-based deployments.
+        utils.rollout()
+        // Monitor the rollout until it has completed.
+        utils.monitor_rollout()
     }
 }
